@@ -5,6 +5,8 @@ from database import get_db
 from models import Enfermero
 from passlib.context import CryptContext
 
+hola = "Hola"
+
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 router = APIRouter(
