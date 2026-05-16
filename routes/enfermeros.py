@@ -5,7 +5,7 @@ from database import get_db
 from models import Enfermero
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 router = APIRouter(
     prefix="/enfermeros",
@@ -122,3 +122,4 @@ async def delete_enfermero(id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
