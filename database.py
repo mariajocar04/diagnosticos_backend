@@ -1,12 +1,20 @@
 # coding=utf-8
+import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
 
-DATABASE_URL = "sqlite:///./nanda_diagnosticos.db"
+load_dotenv()
 
-engine = create_engine(DATABASE_URL)
+# URL de conexión, por defecto usando MySQL local
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "mysql+mysqlconnector://root:@localhost:3306/nanda_diagnosticos"
+)
+
+# Pool recycle para prevenir cierres inesperados de MySQL
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=3600)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
 def get_db():
     db = SessionLocal()

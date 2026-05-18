@@ -1,0 +1,13 @@
+# --- API Framework & Server ---
+fastapi>=0.100.0
+uvicorn>=0.22.0
+
+# --- Database & ORM ---
+sqlalchemy>=2.0.0
+mysql-connector-python>=8.0.33
+
+# --- Security & Password Hashing ---
+passlib[argon2]>=1.7.4
+
+# --- Environment Variables ---
+dotenv
