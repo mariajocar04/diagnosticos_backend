@@ -23,10 +23,10 @@ def get_current_user(
     
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        usuario_str: str = payload.get("sub")
+        email_str: str = payload.get("sub")
         jti: str = payload.get("jti")
         
-        if usuario_str is None or jti is None:
+        if email_str is None or jti is None:
             raise credentials_exception
             
         # Verificar si la sesión fue revocada (Logout)
@@ -40,7 +40,7 @@ def get_current_user(
     except jwt.PyJWTError:
         raise credentials_exception
         
-    user = db.query(Usuario).filter(Usuario.usuario == usuario_str).first()
+    user = db.query(Usuario).filter(Usuario.email == email_str).first()
     if user is None:
         raise credentials_exception
     if not user.activo:

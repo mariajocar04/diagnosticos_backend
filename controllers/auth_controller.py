@@ -38,7 +38,7 @@ class AuthController:
 
     @staticmethod
     def login(db: Session, user_in: UsuarioLogin):
-        user = AuthService.authenticate_user(db, user_in.usuario, user_in.password)
+        user = AuthService.authenticate_user(db, user_in.email, user_in.password)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,7 +51,7 @@ class AuthController:
                 detail="El usuario está inactivo"
             )
             
-        access_token = AuthService.create_access_token(data={"sub": user.usuario}, db=db, user_id=user.id)
+        access_token = AuthService.create_access_token(data={"sub": user.email}, db=db, user_id=user.id)
         
         return {
             "access_token": access_token,

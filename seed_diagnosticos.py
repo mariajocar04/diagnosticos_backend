@@ -1,10 +1,18 @@
 # coding=utf-8
+import os
+import sys
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Diagnostico, Base
+from dotenv import load_dotenv
+
+# Asegurar que se encuentra en la ruta del backend
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 from database import DATABASE_URL
+from models import NandaCatalogo
 
 def seed_diagnosticos():
+    load_dotenv()
     engine = create_engine(DATABASE_URL)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
@@ -26,9 +34,9 @@ def seed_diagnosticos():
 
     for data in diagnosticos_data:
         # Verificar si ya existe para evitar duplicados
-        existing = db.query(Diagnostico).filter(Diagnostico.codigo == data["codigo"]).first()
+        existing = db.query(NandaCatalogo).filter(NandaCatalogo.codigo == data["codigo"]).first()
         if not existing:
-            nuevo = Diagnostico(
+            nuevo = NandaCatalogo(
                 codigo=data["codigo"],
                 nombre=data["nombre"],
                 sintomas=data["sintomas"],
@@ -42,7 +50,7 @@ def seed_diagnosticos():
 
     try:
         db.commit()
-        print("\n¡Registros de diagnósticos insertados exitosamente!")
+        print("\n¡Registros de catálogo NANDA insertados exitosamente!")
     except Exception as e:
         db.rollback()
         print(f"Error al insertar registros: {e}")

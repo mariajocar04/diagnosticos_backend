@@ -3,7 +3,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 
 class UsuarioLogin(BaseModel):
-    usuario: str
+    email: EmailStr
     password: str
 
 class UsuarioCreate(BaseModel):

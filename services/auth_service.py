@@ -26,8 +26,8 @@ class AuthService:
         return pwd_context.verify(plain_password, hashed_password)
 
     @staticmethod
-    def authenticate_user(db: Session, usuario: str, password: str) -> Optional[Usuario]:
-        user = db.query(Usuario).filter(Usuario.usuario == usuario).first()
+    def authenticate_user(db: Session, email: str, password: str) -> Optional[Usuario]:
+        user = db.query(Usuario).filter(Usuario.email == email).first()
         if not user:
             return None
         if not AuthService.verify_password(password, user.password_hash):
