@@ -1,17 +1,12 @@
 # coding=utf-8
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine, Base
-from routes import diagnosticos, enfermeros
-import uvicorn
-
-# Crear tablas en la DB
-Base.metadata.create_all(bind=engine)
+from routes import auth
 
 app = FastAPI(
-    title="NandaDiagnosticosAPI",
+    title="TICOS NurseDx API",
     version="2.0.0",
-    description="API REST Profesional - Diagnósticos NANDA"
+    description="API REST Profesional - Diagnósticos NANDA (MVP)"
 )
 
 # Configuración de CORS
@@ -23,17 +18,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Prefijo global para la API v1
+api_v1_prefix = "/api/v1"
+
 # Incluir los routers
-app.include_router(diagnosticos.router)
-app.include_router(enfermeros.router)
+app.include_router(auth.router, prefix=api_v1_prefix)
 
 @app.get("/", tags=["Info"])
 async def root():
     return {
-        "mensaje": "API de Diagnósticos NANDA Online ✅",
+        "mensaje": "TICOS NurseDx API Online ✅",
         "docs": "/docs",
-        "rutas": "/diagnosticos"
+        "version": "2.0.0"
     }
 
 if __name__ == "__main__":
+    import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

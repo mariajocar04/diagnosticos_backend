@@ -8,6 +8,7 @@ class UsuarioLogin(BaseModel):
 
 class UsuarioCreate(BaseModel):
     usuario: str
+    email: EmailStr
     password: str
     nombre_completo: str
 
@@ -21,6 +22,7 @@ class RolResponse(BaseModel):
 class UsuarioResponse(BaseModel):
     id: int
     usuario: str
+    email: EmailStr
     nombre_completo: Optional[str] = None
     activo: bool
     roles: List[RolResponse] = []

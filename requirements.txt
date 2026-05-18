@@ -15,3 +15,4 @@ python-dotenv>=1.0.0
 
 # --- Authentication & JWT ---
 PyJWT>=2.8.0
+email-validator>=2.0.0
