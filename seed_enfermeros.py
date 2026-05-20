@@ -18,7 +18,34 @@ def seed_enfermeros():
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
 
-    print("Insertando roles por defecto...")
+    print("\nInsertando permisos...")
+    permisos_data = [
+        {"codigo": "paciente:crear", "recurso": "paciente", "accion": "crear"},
+        {"codigo": "paciente:leer", "recurso": "paciente", "accion": "leer"},
+        {"codigo": "paciente:editar", "recurso": "paciente", "accion": "editar"},
+        {"codigo": "nota:crear", "recurso": "nota", "accion": "crear"},
+        {"codigo": "nota:leer_propio", "recurso": "nota", "accion": "leer_propio"},
+        {"codigo": "favorito:gestionar", "recurso": "favorito", "accion": "gestionar"},
+        {"codigo": "busqueda:gestionar", "recurso": "busqueda", "accion": "gestionar"},
+        {"codigo": "reporte:exportar_propio", "recurso": "reporte", "accion": "exportar_propio"},
+    ]
+
+    permisos_map = {}
+    from models.auth import Permiso, RolPermiso # Importar modelos faltantes
+
+    for p_data in permisos_data:
+        existing_permiso = db.query(Permiso).filter(Permiso.codigo == p_data["codigo"]).first()
+        if not existing_permiso:
+            permiso = Permiso(codigo=p_data["codigo"], recurso=p_data["recurso"], accion=p_data["accion"])
+            db.add(permiso)
+            db.flush()
+            permisos_map[p_data["codigo"]] = permiso
+            print(f"Permiso creado: {p_data['codigo']}")
+        else:
+            permisos_map[p_data["codigo"]] = existing_permiso
+            print(f"Permiso ya existe: {p_data['codigo']}")
+
+    print("\nInsertando roles por defecto...")
     roles_data = [
         {"nombre": "administrador", "descripcion": "Administrador del sistema con acceso completo"},
         {"nombre": "enfermero", "descripcion": "Personal de enfermería con acceso a pacientes y diagnósticos"}
@@ -30,12 +57,22 @@ def seed_enfermeros():
         if not existing_rol:
             rol = Rol(nombre=r_data["nombre"], descripcion=r_data["descripcion"])
             db.add(rol)
-            db.flush() # Para obtener el ID generado sin comprometer la transacción todavía
+            db.flush() 
             roles_map[r_data["nombre"]] = rol
             print(f"Rol creado: {r_data['nombre']}")
         else:
             roles_map[r_data["nombre"]] = existing_rol
             print(f"Rol ya existe: {r_data['nombre']}")
+
+    # Asignar permisos al rol enfermero (El admin tiene acceso total por código, no necesita mapeo explícito)
+    print("\nAsignando permisos al rol enfermero...")
+    rol_enfermero = roles_map["enfermero"]
+    for codigo_permiso in permisos_map.keys():
+        existing_rp = db.query(RolPermiso).filter_by(rol_id=rol_enfermero.id, permiso_id=permisos_map[codigo_permiso].id).first()
+        if not existing_rp:
+            rp = RolPermiso(rol_id=rol_enfermero.id, permiso_id=permisos_map[codigo_permiso].id)
+            db.add(rp)
+            print(f"Permiso {codigo_permiso} asignado a enfermero")
 
     print("\nInsertando usuarios de prueba en la tabla 'usuario'...")
 
