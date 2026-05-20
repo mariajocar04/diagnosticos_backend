@@ -36,3 +36,13 @@ class DiagnosticoController:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=str(e)
             )
+
+    @staticmethod
+    def get_historial(db: Session, user_id: int):
+        rows = DiagnosticoService.get_busquedas_recientes_by_user(db, user_id)
+        return {"total": len(rows), "datos": rows}
+
+    @staticmethod
+    def clear_historial(db: Session, user_id: int):
+        DiagnosticoService.clear_busquedas_recientes_by_user(db, user_id)
+        return {"mensaje": "Historial de búsquedas eliminado correctamente."}

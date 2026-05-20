@@ -1,7 +1,7 @@
 # coding=utf-8
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from models.auth import Usuario
+from models.auth import Usuario, Rol, UsuarioRol
 from schemas.auth import UsuarioCreate, UsuarioLogin
 from services.auth_service import AuthService
 
@@ -32,6 +32,14 @@ class AuthController:
             nombre_completo=user_in.nombre_completo
         )
         db.add(nuevo_usuario)
+        db.flush() # Obtener ID del usuario para asociar el rol
+
+        # Asignación automática y temporal del rol 'enfermero'
+        rol_enfermero = db.query(Rol).filter(Rol.nombre == "enfermero").first()
+        if rol_enfermero:
+            usuario_rol = UsuarioRol(usuario_id=nuevo_usuario.id, rol_id=rol_enfermero.id)
+            db.add(usuario_rol)
+
         db.commit()
         db.refresh(nuevo_usuario)
         return {"mensaje": "Usuario registrado exitosamente", "id": nuevo_usuario.id}
