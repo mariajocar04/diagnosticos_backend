@@ -18,12 +18,18 @@ class DiagnosticoService:
             # Búsqueda flexible y sencilla (Enfermero/Admin)
             query = db.query(NandaCatalogo)
             if q:
-                search_filter = f"%{q}%"
-                query = query.filter(
-                    (NandaCatalogo.codigo.ilike(search_filter)) |
-                    (NandaCatalogo.nombre.ilike(search_filter)) |
-                    (NandaCatalogo.sintomas.ilike(search_filter))
-                )
+                from sqlalchemy import or_
+                terms = [t.strip() for t in q.split(",") if t.strip()]
+                if terms:
+                    conditions = []
+                    for t in terms:
+                        search_filter = f"%{t}%"
+                        conditions.append(
+                            (NandaCatalogo.codigo.ilike(search_filter)) |
+                            (NandaCatalogo.nombre.ilike(search_filter)) |
+                            (NandaCatalogo.sintomas.ilike(search_filter))
+                        )
+                    query = query.filter(or_(*conditions))
                 # Registrar el historial de la búsqueda (FIFO)
                 DiagnosticoService._registrar_busqueda(db, user.id, q)
             return query.order_by(NandaCatalogo.codigo).all()
