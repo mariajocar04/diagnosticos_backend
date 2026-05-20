@@ -54,3 +54,36 @@ class NotaEnfermeriaResponse(BaseModel):
 class NotaEnfermeriaList(BaseModel):
     total: int
     datos: List[NotaEnfermeriaResponse]
+
+class NandaMiniResponse(BaseModel):
+    codigo: str
+    nombre: str
+
+    class Config:
+        from_attributes = True
+
+class DiagnosticoClinicoCreate(BaseModel):
+    codigo_nanda: str = Field(..., max_length=10, description="Código del diagnóstico NANDA")
+    resultado: Optional[str] = Field(None, description="Resultado esperado o evolución clínica")
+
+class DiagnosticoClinicoResponse(BaseModel):
+    id: int
+    usuario_id: int
+    paciente_id: int
+    codigo_nanda: str
+    resultado: Optional[str] = None
+    fecha_hora: datetime
+    usuario: Optional[UsuarioMiniResponse] = None
+    catalogo: Optional[NandaMiniResponse] = None
+
+    class Config:
+        from_attributes = True
+
+class EventoHistorialResponse(BaseModel):
+    tipo: str  # 'nota' o 'diagnostico'
+    id: int
+    fecha: datetime
+    descripcion: str
+    detalle: str
+    usuario: Optional[UsuarioMiniResponse] = None
+    metadata: Optional[dict] = None

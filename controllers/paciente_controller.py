@@ -6,7 +6,8 @@ from models import Usuario
 from services.paciente_service import PacienteService
 from schemas.paciente import (
     PacienteCreate, PacienteUpdate, PacienteResponse, PacienteList,
-    NotaEnfermeriaCreate, NotaEnfermeriaResponse, NotaEnfermeriaList
+    NotaEnfermeriaCreate, NotaEnfermeriaResponse, NotaEnfermeriaList,
+    DiagnosticoClinicoCreate, DiagnosticoClinicoResponse, EventoHistorialResponse
 )
 
 class PacienteController:
@@ -56,3 +57,20 @@ class PacienteController:
     def eliminar_nota(db: Session, nota_id: int, current_user: Usuario):
         PacienteService.eliminar_nota(db, nota_id, current_user)
         return {"mensaje": "Nota de enfermería eliminada exitosamente"}
+
+    @staticmethod
+    def asignar_diagnostico(db: Session, usuario_id: int, paciente_id: int, data: DiagnosticoClinicoCreate) -> DiagnosticoClinicoResponse:
+        return PacienteService.asignar_diagnostico(db, usuario_id, paciente_id, data)
+
+    @staticmethod
+    def obtener_diagnosticos_paciente(db: Session, paciente_id: int) -> list[DiagnosticoClinicoResponse]:
+        return PacienteService.obtener_diagnosticos_paciente(db, paciente_id)
+
+    @staticmethod
+    def desasignar_diagnostico(db: Session, asignacion_id: int):
+        PacienteService.desasignar_diagnostico(db, asignacion_id)
+        return {"mensaje": "Diagnóstico clínico desasignado exitosamente"}
+
+    @staticmethod
+    def obtener_historial_paciente(db: Session, paciente_id: int, usuario_id_filtro: Optional[int] = None) -> list[EventoHistorialResponse]:
+        return PacienteService.obtener_historial_paciente(db, paciente_id, usuario_id_filtro)

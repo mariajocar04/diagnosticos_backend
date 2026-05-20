@@ -7,7 +7,8 @@ from routes.deps import check_permission, get_current_user
 from models.auth import Usuario
 from schemas.paciente import (
     PacienteCreate, PacienteUpdate, PacienteResponse, PacienteList,
-    NotaEnfermeriaCreate, NotaEnfermeriaResponse, NotaEnfermeriaList
+    NotaEnfermeriaCreate, NotaEnfermeriaResponse, NotaEnfermeriaList,
+    DiagnosticoClinicoCreate, DiagnosticoClinicoResponse, EventoHistorialResponse
 )
 from controllers.paciente_controller import PacienteController
 
@@ -93,3 +94,39 @@ def eliminar_nota(
     current_user: Usuario = Depends(get_current_user)
 ):
     return PacienteController.eliminar_nota(db, nota_id, current_user)
+
+@router.post("/{paciente_id}/diagnosticos", response_model=DiagnosticoClinicoResponse, status_code=status.HTTP_201_CREATED)
+def asignar_diagnostico(
+    paciente_id: int,
+    data: DiagnosticoClinicoCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(check_permission("paciente:editar"))
+):
+    return PacienteController.asignar_diagnostico(db, current_user.id, paciente_id, data)
+
+@router.get("/{paciente_id}/diagnosticos", response_model=list[DiagnosticoClinicoResponse])
+def obtener_diagnosticos_paciente(
+    paciente_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(check_permission("paciente:leer"))
+):
+    return PacienteController.obtener_diagnosticos_paciente(db, paciente_id)
+
+@router.delete("/diagnosticos/{asignacion_id}", status_code=status.HTTP_200_OK)
+def desasignar_diagnostico(
+    asignacion_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(check_permission("paciente:editar"))
+):
+    return PacienteController.desasignar_diagnostico(db, asignacion_id)
+
+@router.get("/{paciente_id}/historial", response_model=list[EventoHistorialResponse])
+def obtener_historial_paciente(
+    paciente_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(check_permission("paciente:leer"))
+):
+    # Si no es admin, aplicamos restricción nota:leer_propio en el historial unificado
+    is_admin = any(role.nombre == "administrador" for role in current_user.roles)
+    usuario_id_filtro = current_user.id if not is_admin else None
+    return PacienteController.obtener_historial_paciente(db, paciente_id, usuario_id_filtro)

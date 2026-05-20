@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import Optional, List, Tuple
 from fastapi import HTTPException, status
-from models import Paciente, NotaEnfermeria, Usuario
-from schemas.paciente import PacienteCreate, PacienteUpdate, NotaEnfermeriaCreate
+from models import Paciente, NotaEnfermeria, Usuario, DiagnosticoClinico, NandaCatalogo
+from schemas.paciente import PacienteCreate, PacienteUpdate, NotaEnfermeriaCreate, DiagnosticoClinicoCreate
 
 class PacienteService:
     @staticmethod
@@ -182,3 +182,107 @@ class PacienteService:
         db.delete(nota)
         db.commit()
         return True
+
+    @staticmethod
+    def asignar_diagnostico(db: Session, usuario_id: int, paciente_id: int, data: DiagnosticoClinicoCreate) -> DiagnosticoClinico:
+        # Verificar paciente
+        paciente = db.query(Paciente).filter(Paciente.id == paciente_id).first()
+        if not paciente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Paciente no encontrado"
+            )
+            
+        # Verificar código NANDA
+        diagnostico_nanda = db.query(NandaCatalogo).filter(NandaCatalogo.codigo == data.codigo_nanda).first()
+        if not diagnostico_nanda:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Diagnóstico NANDA con código {data.codigo_nanda} no encontrado en el catálogo"
+            )
+            
+        nueva_asignacion = DiagnosticoClinico(
+            usuario_id=usuario_id,
+            paciente_id=paciente_id,
+            codigo_nanda=data.codigo_nanda,
+            resultado=data.resultado
+        )
+        db.add(nueva_asignacion)
+        db.commit()
+        db.refresh(nueva_asignacion)
+        return nueva_asignacion
+
+    @staticmethod
+    def obtener_diagnosticos_paciente(db: Session, paciente_id: int) -> List[DiagnosticoClinico]:
+        # Verificar paciente
+        paciente = db.query(Paciente).filter(Paciente.id == paciente_id).first()
+        if not paciente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Paciente no encontrado"
+            )
+        return db.query(DiagnosticoClinico).filter(DiagnosticoClinico.paciente_id == paciente_id).order_by(DiagnosticoClinico.fecha_hora.desc()).all()
+
+    @staticmethod
+    def desasignar_diagnostico(db: Session, asignacion_id: int) -> bool:
+        asignacion = db.query(DiagnosticoClinico).filter(DiagnosticoClinico.id == asignacion_id).first()
+        if not asignacion:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Asignación de diagnóstico clínico no encontrada"
+            )
+        db.delete(asignacion)
+        db.commit()
+        return True
+
+    @staticmethod
+    def obtener_historial_paciente(db: Session, paciente_id: int, usuario_id_filtro: Optional[int] = None) -> List[dict]:
+        # Verificar paciente
+        paciente = db.query(Paciente).filter(Paciente.id == paciente_id).first()
+        if not paciente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Paciente no encontrado"
+            )
+
+        # Consultar notas y diagnósticos
+        notas = PacienteService.obtener_notas_paciente(db, paciente_id, usuario_id_filtro)
+        diagnosticos = PacienteService.obtener_diagnosticos_paciente(db, paciente_id)
+
+        eventos = []
+        for n in notas:
+            eventos.append({
+                "tipo": "nota",
+                "id": n.id,
+                "fecha": n.creado_en,
+                "descripcion": "Nota de enfermería registrada",
+                "detalle": n.contenido,
+                "usuario": {
+                    "id": n.usuario.id,
+                    "usuario": n.usuario.usuario,
+                    "nombre_completo": n.usuario.nombre_completo
+                } if n.usuario else None,
+                "metadata": None
+            })
+
+        for d in diagnosticos:
+            eventos.append({
+                "tipo": "diagnostico",
+                "id": d.id,
+                "fecha": d.fecha_hora,
+                "descripcion": f"Diagnóstico NANDA asignado: {d.codigo_nanda}",
+                "detalle": d.resultado or "",
+                "usuario": {
+                    "id": d.usuario.id,
+                    "usuario": d.usuario.usuario,
+                    "nombre_completo": d.usuario.nombre_completo
+                } if d.usuario else None,
+                "metadata": {
+                    "codigo_nanda": d.codigo_nanda,
+                    "nombre_nanda": d.catalogo.nombre if d.catalogo else ""
+                }
+            })
+
+        # Ordenar cronológicamente descendente
+        eventos.sort(key=lambda x: x["fecha"], reverse=True)
+        return eventos
