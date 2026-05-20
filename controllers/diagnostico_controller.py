@@ -6,8 +6,8 @@ from services.diagnostico_service import DiagnosticoService
 class DiagnosticoController:
 
     @staticmethod
-    def get_catalogo(db: Session, q: str = None):
-        rows = DiagnosticoService.get_all_catalogo(db, q=q)
+    def get_catalogo(db: Session, q: str = None, user = None):
+        rows = DiagnosticoService.get_all_catalogo(db, q=q, user=user)
         return {"total": len(rows), "datos": rows}
 
     @staticmethod
