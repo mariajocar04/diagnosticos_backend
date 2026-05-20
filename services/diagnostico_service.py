@@ -1,7 +1,7 @@
 # coding=utf-8
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from models.diagnostico import NandaCatalogo
+from models.diagnostico import NandaCatalogo, Favorito
 from models.auth import Usuario
 
 class DiagnosticoService:
@@ -66,3 +66,36 @@ class DiagnosticoService:
             if row:
                 return row
         return db.query(NandaCatalogo).filter(NandaCatalogo.codigo == id_or_codigo).first()
+
+    @staticmethod
+    def get_favoritos_by_user(db: Session, user_id: int) -> List[NandaCatalogo]:
+        # Hacemos un join explícito para obtener los catálogos NANDA que son favoritos del usuario
+        return db.query(NandaCatalogo).join(
+            Favorito, Favorito.codigo_nanda == NandaCatalogo.codigo
+        ).filter(
+            Favorito.usuario_id == user_id
+        ).order_by(Favorito.creado_en.desc()).all()
+
+    @staticmethod
+    def toggle_favorito(db: Session, user_id: int, codigo_nanda: str) -> bool:
+        # Verificar si el diagnóstico existe
+        diagnostico = db.query(NandaCatalogo).filter(NandaCatalogo.codigo == codigo_nanda).first()
+        if not diagnostico:
+            raise ValueError(f"El diagnóstico con código {codigo_nanda} no existe.")
+
+        favorito = db.query(Favorito).filter(
+            Favorito.usuario_id == user_id, 
+            Favorito.codigo_nanda == codigo_nanda
+        ).first()
+
+        if favorito:
+            # Ya es favorito, desmarcarlo
+            db.delete(favorito)
+            db.commit()
+            return False
+        else:
+            # No es favorito, agregarlo
+            nuevo_favorito = Favorito(usuario_id=user_id, codigo_nanda=codigo_nanda)
+            db.add(nuevo_favorito)
+            db.commit()
+            return True
