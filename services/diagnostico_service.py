@@ -1,7 +1,7 @@
 # coding=utf-8
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from models.diagnostico import NandaCatalogo, Favorito, BusquedaReciente
+from models.diagnostico import NandaCatalogo
 from models.auth import Usuario
 
 class DiagnosticoService:
@@ -18,20 +18,12 @@ class DiagnosticoService:
             # Búsqueda flexible y sencilla (Enfermero/Admin)
             query = db.query(NandaCatalogo)
             if q:
-                from sqlalchemy import or_
-                terms = [t.strip() for t in q.split(",") if t.strip()]
-                if terms:
-                    conditions = []
-                    for t in terms:
-                        search_filter = f"%{t}%"
-                        conditions.append(
-                            (NandaCatalogo.codigo.ilike(search_filter)) |
-                            (NandaCatalogo.nombre.ilike(search_filter)) |
-                            (NandaCatalogo.sintomas.ilike(search_filter))
-                        )
-                    query = query.filter(or_(*conditions))
-                # Registrar el historial de la búsqueda (FIFO)
-                DiagnosticoService._registrar_busqueda(db, user.id, q)
+                search_filter = f"%{q}%"
+                query = query.filter(
+                    (NandaCatalogo.codigo.ilike(search_filter)) |
+                    (NandaCatalogo.nombre.ilike(search_filter)) |
+                    (NandaCatalogo.sintomas.ilike(search_filter))
+                )
             return query.order_by(NandaCatalogo.codigo).all()
         else:
             # Búsqueda restrictiva (Invitado / Público)
@@ -74,78 +66,3 @@ class DiagnosticoService:
             if row:
                 return row
         return db.query(NandaCatalogo).filter(NandaCatalogo.codigo == id_or_codigo).first()
-
-    @staticmethod
-    def get_favoritos_by_user(db: Session, user_id: int) -> List[NandaCatalogo]:
-        # Hacemos un join explícito para obtener los catálogos NANDA que son favoritos del usuario
-        return db.query(NandaCatalogo).join(
-            Favorito, Favorito.codigo_nanda == NandaCatalogo.codigo
-        ).filter(
-            Favorito.usuario_id == user_id
-        ).order_by(Favorito.creado_en.desc()).all()
-
-    @staticmethod
-    def toggle_favorito(db: Session, user_id: int, codigo_nanda: str) -> bool:
-        # Verificar si el diagnóstico existe
-        diagnostico = db.query(NandaCatalogo).filter(NandaCatalogo.codigo == codigo_nanda).first()
-        if not diagnostico:
-            raise ValueError(f"El diagnóstico con código {codigo_nanda} no existe.")
-
-        favorito = db.query(Favorito).filter(
-            Favorito.usuario_id == user_id, 
-            Favorito.codigo_nanda == codigo_nanda
-        ).first()
-
-        if favorito:
-            # Ya es favorito, desmarcarlo
-            db.delete(favorito)
-            db.commit()
-            return False
-        else:
-            # No es favorito, agregarlo
-            nuevo_favorito = Favorito(usuario_id=user_id, codigo_nanda=codigo_nanda)
-            db.add(nuevo_favorito)
-            db.commit()
-            return True
-
-    @staticmethod
-    def _registrar_busqueda(db: Session, user_id: int, q: str):
-        termino = q.strip()
-        if not termino:
-            return
-            
-        # Verificar si ya existe este término para evitar duplicados seguidos
-        ultima_busqueda = db.query(BusquedaReciente).filter(
-            BusquedaReciente.usuario_id == user_id
-        ).order_by(BusquedaReciente.fecha.desc()).first()
-        
-        if ultima_busqueda and ultima_busqueda.termino.lower() == termino.lower():
-            return # No registrar si es exactamente la misma búsqueda anterior
-
-        # Contar cuántas búsquedas tiene el usuario
-        count = db.query(BusquedaReciente).filter(BusquedaReciente.usuario_id == user_id).count()
-        
-        # Lógica FIFO: si hay 10 o más, eliminar la más antigua
-        if count >= 10:
-            mas_antigua = db.query(BusquedaReciente).filter(
-                BusquedaReciente.usuario_id == user_id
-            ).order_by(BusquedaReciente.fecha.asc()).first()
-            if mas_antigua:
-                db.delete(mas_antigua)
-                db.flush()
-                
-        # Insertar la nueva búsqueda
-        nueva_busqueda = BusquedaReciente(usuario_id=user_id, termino=termino)
-        db.add(nueva_busqueda)
-        db.commit()
-
-    @staticmethod
-    def get_busquedas_recientes_by_user(db: Session, user_id: int) -> List[BusquedaReciente]:
-        return db.query(BusquedaReciente).filter(
-            BusquedaReciente.usuario_id == user_id
-        ).order_by(BusquedaReciente.fecha.desc()).all()
-
-    @staticmethod
-    def clear_busquedas_recientes_by_user(db: Session, user_id: int):
-        db.query(BusquedaReciente).filter(BusquedaReciente.usuario_id == user_id).delete(synchronize_session=False)
-        db.commit()
