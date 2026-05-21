@@ -16,3 +16,8 @@ class NandaCatalogoResponse(BaseModel):
 class NandaCatalogoList(BaseModel):
     total: int
     datos: List[NandaCatalogoResponse]
+
+class ToggleFavoritoResponse(BaseModel):
+    mensaje: str
+    estado: bool
+
