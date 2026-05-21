@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import Optional
 from database import get_db
-from schemas.diagnostico import NandaCatalogoList, NandaCatalogoResponse, ToggleFavoritoResponse
+from schemas.diagnostico import NandaCatalogoList, NandaCatalogoResponse, ToggleFavoritoResponse, BusquedaRecienteList
 from controllers.diagnostico_controller import DiagnosticoController
 from routes.deps import get_current_user_optional, check_permission
 from models.auth import Usuario
@@ -47,6 +47,25 @@ def toggle_favorito(
     """
     return DiagnosticoController.toggle_favorito(db, current_user.id, codigo_nanda)
 
+@router.get("/historial", response_model=BusquedaRecienteList)
+def get_historial(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(check_permission("busqueda:gestionar"))
+):
+    """
+    [Protegido] Listar el historial de búsquedas recientes del usuario (máximo 10).
+    """
+    return DiagnosticoController.get_historial(db, current_user.id)
+
+@router.delete("/historial")
+def clear_historial(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(check_permission("busqueda:gestionar"))
+):
+    """
+    [Protegido] Limpiar todo el historial de búsquedas recientes del usuario.
+    """
+    return DiagnosticoController.clear_historial(db, current_user.id)
 
 @router.get("/{id_or_codigo}", response_model=NandaCatalogoResponse)
 def get_catalogo_by_id_or_codigo(id_or_codigo: str, db: Session = Depends(get_db)):

@@ -1,7 +1,7 @@
 # coding=utf-8
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth, diagnosticos
+from routes import auth, diagnosticos, pacientes
 
 app = FastAPI(
     title="TICOS NurseDx API",
@@ -24,6 +24,7 @@ api_v1_prefix = "/api/v1"
 # Incluir los routers
 app.include_router(auth.router, prefix=api_v1_prefix)
 app.include_router(diagnosticos.router, prefix=api_v1_prefix)
+app.include_router(pacientes.router, prefix=api_v1_prefix)
 
 @app.get("/", tags=["Info"])
 async def root():
