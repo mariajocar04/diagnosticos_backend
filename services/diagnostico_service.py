@@ -1,10 +1,18 @@
 # coding=utf-8
+import unicodedata
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from models.diagnostico import NandaCatalogo, Favorito, BusquedaReciente
 from models.auth import Usuario
 
 class DiagnosticoService:
+
+    @staticmethod
+    def _normalize_text(value: Optional[str]) -> str:
+        if not value:
+            return ""
+        normalized = unicodedata.normalize("NFD", value.lower().strip())
+        return "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
 
     @staticmethod
     def get_all_catalogo(db: Session, q: Optional[str] = None, user: Optional[Usuario] = None) -> List[NandaCatalogo]:
@@ -39,7 +47,7 @@ class DiagnosticoService:
                 return []  # El invitado no ve el catálogo completo por defecto sin buscar
             
             # Tokenizar por comas, limpiar espacios y omitir términos vacíos
-            terms = [t.strip().lower() for t in q.split(",") if t.strip()]
+            terms = [DiagnosticoService._normalize_text(t) for t in q.split(",") if t.strip()]
             
             # Si ingresó menos de 2 términos, es imposible cumplir con la regla de 2 o más coincidencias
             if len(terms) < 2:
@@ -51,14 +59,23 @@ class DiagnosticoService:
             
             for diag in all_diagnoses:
                 # Obtener la lista de síntomas del diagnóstico desde el string CSV
-                diag_sintomas = [s.strip().lower() for s in (diag.sintomas or "").split(",") if s.strip()]
-                
-                # Contar cuántos términos buscados coinciden/están contenidos en los síntomas de este diagnóstico
+                diag_sintomas = [DiagnosticoService._normalize_text(s) for s in (diag.sintomas or "").split(",") if s.strip()]
+                diag_nombre = DiagnosticoService._normalize_text(diag.nombre)
+                diag_codigo = DiagnosticoService._normalize_text(diag.codigo)
+       
+                # Contar coincidencias en nombre, código y síntomas
                 matches = 0
                 for term in terms:
-                    if any(term in s for s in diag_sintomas):
+                    # Verificar si el término coincide en nombre
+                    if term in diag_nombre:
                         matches += 1
-                        
+                    # Verificar si el término coincide en código
+                    elif term in diag_codigo:
+                        matches += 1
+                    # Verificar si el término coincide en síntomas
+                    elif any(term in s for s in diag_sintomas):
+                        matches += 1
+               
                 if matches >= 2:
                     filtered_results.append(diag)
                     
