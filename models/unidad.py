@@ -9,6 +9,7 @@ class Unidad(Base):
     codigo = Column(String(50), nullable=False, unique=True)
     nombre = Column(String(200), nullable=False)
     tipo = Column(String(50), nullable=False)
+    capacidad = Column(Integer, nullable=False, default=0)
     descripcion = Column(Text)
     creado_en = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     actualizado_en = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

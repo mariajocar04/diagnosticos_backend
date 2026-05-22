@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import List
 from fastapi import HTTPException, status
 
-from models import Usuario, Rol, UsuarioRol, Paciente, DiagnosticoClinico, ReporteExportado, Auditoria
+from models import Usuario, Rol, UsuarioRol, Paciente, DiagnosticoClinico, ReporteExportado, Auditoria, Unidad, Remision
 from schemas.admin import DashboardMetrics
 
 class AdminService:
@@ -19,13 +19,49 @@ class AdminService:
         diagnosticos_recientes = db.query(DiagnosticoClinico).filter(DiagnosticoClinico.fecha_hora >= hace_7_dias).count()
         
         pdfs_generados = db.query(ReporteExportado).count()
+        remisiones_activas = db.query(Remision).filter(Remision.estado == 'ACTIVA').count()
+        
+        # Pacientes por unidad (Donut chart data)
+        unidades = db.query(Unidad).all()
+        pacientes_por_unidad = []
+        for u in unidades:
+            count = db.query(Remision).filter(Remision.unidad_id == u.id, Remision.estado == 'ACTIVA').count()
+            if count > 0:
+                pacientes_por_unidad.append({"unidad": u.nombre, "cantidad": count})
         
         return DashboardMetrics(
             usuarios_activos=usuarios_activos,
             pacientes_totales=pacientes_totales,
             diagnosticos_recientes=diagnosticos_recientes,
-            pdfs_generados=pdfs_generados
+            pdfs_generados=pdfs_generados,
+            remisiones_activas=remisiones_activas,
+            pacientes_por_unidad=pacientes_por_unidad
         )
+
+    @staticmethod
+    def get_active_remissions_board(db: Session):
+        unidades = db.query(Unidad).all()
+        board = []
+        for u in unidades:
+            remisiones = db.query(Remision).filter(Remision.unidad_id == u.id, Remision.estado == 'ACTIVA').all()
+            
+            # Formatear unidad y remisiones para coincidir con UnidadBoardColumn
+            unidad_dict = {
+                "codigo": u.codigo,
+                "nombre": u.nombre,
+                "tipo": u.tipo,
+                "capacidad": u.capacidad,
+                "descripcion": u.descripcion,
+                "id": u.id,
+                "creado_en": u.creado_en,
+                "actualizado_en": u.actualizado_en,
+                "pacientes_activos": len(remisiones)
+            }
+            board.append({
+                "unidad": unidad_dict,
+                "remisiones_activas": remisiones
+            })
+        return board
 
     @staticmethod
     def list_users(db: Session) -> List[dict]:

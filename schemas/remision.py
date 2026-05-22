@@ -13,6 +13,16 @@ class UnidadResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class PacienteMiniResponse(BaseModel):
+    id: int
+    nombre_completo: str
+    numero_historia: str
+    tipo_documento: str
+    numero_documento: str
+
+    class Config:
+        from_attributes = True
+
 class RemisionCreate(BaseModel):
     paciente_id: int = Field(...)
     unidad_id: int = Field(...)
@@ -28,6 +38,7 @@ class RemisionUpdate(BaseModel):
 class RemisionResponse(BaseModel):
     id: int
     paciente_id: int
+    paciente: Optional[PacienteMiniResponse] = None
     unidad: Optional[UnidadResponse] = None
     motivo: Optional[str] = None
     prioridad: str

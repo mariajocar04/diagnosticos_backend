@@ -12,6 +12,7 @@ from models import *
 # Importar funciones de siembra
 from seed_diagnosticos import seed_diagnosticos
 from seed_enfermeros import seed_enfermeros
+from seed_remisiones import seed
 
 def reset_db():
     print("⚠️ ATENCIÓN: Se eliminarán todas las tablas de MySQL y sus datos.")
@@ -32,6 +33,7 @@ def reset_db():
     try:
         seed_diagnosticos()
         seed_enfermeros()
+        seed()
         print("\n✅ Base de datos completamente poblada y lista.")
     except Exception as e:
         print(f"\n❌ Error al ejecutar las semillas: {e}")

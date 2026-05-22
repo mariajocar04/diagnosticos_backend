@@ -14,6 +14,7 @@ class EmailService:
 
     @staticmethod
     def get_mail_config() -> ConnectionConfig:
+        
         return ConnectionConfig(
             MAIL_USERNAME=os.getenv("MAIL_USERNAME", ""),
             MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", ""),

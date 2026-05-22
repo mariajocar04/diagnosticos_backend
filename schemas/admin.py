@@ -8,6 +8,8 @@ class DashboardMetrics(BaseModel):
     pacientes_totales: int
     diagnosticos_recientes: int
     pdfs_generados: int
+    remisiones_activas: int
+    pacientes_por_unidad: Optional[List[dict]] = None
 
 class UsuarioResponse(BaseModel):
     id: int

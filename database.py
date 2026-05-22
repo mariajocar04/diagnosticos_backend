@@ -9,7 +9,7 @@ load_dotenv()
 # URL de conexión, por defecto usando MySQL local
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "mysql+mysqlconnector://root:@localhost:3306/nanda_diagnosticos"
+    "mysql+mysqlconnector://root:Blass1.2@localhost:3306/nanda_diagnosticos"
 )
 
 # Pool recycle para prevenir cierres inesperados de MySQL

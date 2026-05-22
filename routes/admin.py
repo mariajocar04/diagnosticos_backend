@@ -7,6 +7,7 @@ from database import get_db
 from models.auth import Usuario
 from routes.deps import get_current_user
 from schemas.admin import DashboardMetrics, UsuarioResponse, ToggleUserStatus, ChangeUserRole
+from schemas.unidad import UnidadBoardColumn
 from services.admin_service import AdminService
 
 router = APIRouter()
@@ -25,6 +26,11 @@ def require_admin(current_user: Usuario = Depends(get_current_user)):
 def obtener_metricas_dashboard(db: Session = Depends(get_db)):
     """Obtiene métricas globales para el panel administrativo"""
     return AdminService.get_dashboard_metrics(db)
+
+@router.get("/remisiones-board", response_model=List[UnidadBoardColumn], dependencies=[Depends(require_admin)])
+def obtener_remisiones_board(db: Session = Depends(get_db)):
+    """Obtiene el Kanban board de remisiones activas por unidad"""
+    return AdminService.get_active_remissions_board(db)
 
 @router.get("/usuarios", response_model=List[UsuarioResponse], dependencies=[Depends(require_admin)])
 def listar_usuarios(db: Session = Depends(get_db)):
@@ -57,3 +63,4 @@ def cambiar_rol_usuario(
 def obtener_auditoria(limit: int = 100, db: Session = Depends(get_db)):
     """Consulta los registros de auditoría (solo admin)"""
     return AdminService.get_audit_logs(db, limit)
+

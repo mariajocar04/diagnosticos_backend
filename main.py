@@ -28,6 +28,8 @@ app.include_router(pacientes.router, prefix=api_v1_prefix)
 app.include_router(reportes.router, prefix=api_v1_prefix, tags=["Reportes"])
 app.include_router(admin.router, prefix=api_v1_prefix, tags=["Administración"])
 app.include_router(remisiones.router, prefix=api_v1_prefix, tags=["Remisiones"])
+from routes import unidades
+app.include_router(unidades.router, prefix=api_v1_prefix)
 
 @app.get("/", tags=["Info"])
 async def root():
