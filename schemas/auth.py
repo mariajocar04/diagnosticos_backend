@@ -37,3 +37,17 @@ class TokenData(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+
+class OTPRequest(BaseModel):
+    email: EmailStr
+
+
+class OTPVerify(BaseModel):
+    email: EmailStr
+    otp_code: str
+
+
+class PasswordResetByOTP(BaseModel):
+    reset_token: str
+    new_password: str

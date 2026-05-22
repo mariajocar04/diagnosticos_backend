@@ -1,12 +1,15 @@
 # coding=utf-8
 import os
 import uuid
+import string
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 from passlib.context import CryptContext
 import jwt
 from sqlalchemy.orm import Session
 from models.auth import Usuario, Sesion
+from models.remision import OtpToken
 
 # Configuración de JWT
 SECRET_KEY = os.getenv("SECRET_KEY", "secret_dev_key")
@@ -67,3 +70,92 @@ class AuthService:
         if not sesion or sesion.revocado:
             return True
         return False
+
+    @staticmethod
+    def generate_otp_code(length: int = 8) -> str:
+        alphabet = string.ascii_uppercase + string.digits
+        return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+    @staticmethod
+    def create_password_reset_otp(db: Session, email: str, minutes_valid: int = 15) -> Optional[str]:
+        user = db.query(Usuario).filter(Usuario.email == email).first()
+        if not user:
+            return None
+
+        # Invalidar tokens anteriores no usados
+        previous = db.query(OtpToken).filter(
+            OtpToken.usuario_id == user.id,
+            OtpToken.tipo == 'password_reset',
+            OtpToken.usado == False
+        ).all()
+        for p in previous:
+            p.usado = True
+
+        otp_code = AuthService.generate_otp_code()
+        token_hash = AuthService.get_password_hash(otp_code)
+        expires_at = datetime.utcnow() + timedelta(minutes=minutes_valid)
+
+        row = OtpToken(
+            usuario_id=user.id,
+            token_hash=token_hash,
+            tipo='password_reset',
+            expiracion=expires_at,
+            usado=False,
+            intentos=0,
+        )
+        db.add(row)
+        db.commit()
+        return otp_code
+
+    @staticmethod
+    def verify_password_reset_otp(db: Session, email: str, otp_code: str, max_attempts: int = 5) -> Optional[str]:
+        user = db.query(Usuario).filter(Usuario.email == email).first()
+        if not user:
+            return None
+
+        now = datetime.utcnow()
+        otp_row = db.query(OtpToken).filter(
+            OtpToken.usuario_id == user.id,
+            OtpToken.tipo == 'password_reset',
+            OtpToken.usado == False,
+            OtpToken.expiracion > now
+        ).order_by(OtpToken.creado_en.desc()).first()
+
+        if not otp_row:
+            return None
+
+        if not AuthService.verify_password(otp_code, otp_row.token_hash):
+            otp_row.intentos = (otp_row.intentos or 0) + 1
+            if otp_row.intentos >= max_attempts:
+                otp_row.usado = True
+            db.commit()
+            return None
+
+        otp_row.usado = True
+        db.commit()
+
+        payload = {
+            'sub': user.email,
+            'purpose': 'password_reset',
+            'exp': datetime.utcnow() + timedelta(minutes=15)
+        }
+        return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+    @staticmethod
+    def reset_password_with_token(db: Session, reset_token: str, new_password: str) -> bool:
+        try:
+            payload = jwt.decode(reset_token, SECRET_KEY, algorithms=[ALGORITHM])
+            email = payload.get('sub')
+            purpose = payload.get('purpose')
+            if not email or purpose != 'password_reset':
+                return False
+        except jwt.PyJWTError:
+            return False
+
+        user = db.query(Usuario).filter(Usuario.email == email).first()
+        if not user:
+            return False
+
+        user.password_hash = AuthService.get_password_hash(new_password)
+        db.commit()
+        return True
