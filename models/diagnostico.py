@@ -21,10 +21,12 @@ class DiagnosticoClinico(Base):
     codigo_nanda = Column(String(10), ForeignKey("nanda_catalogo.codigo", ondelete="CASCADE"), nullable=False)
     resultado = Column(Text)
     fecha_hora = Column(DateTime(timezone=True), server_default=func.now())
+    remision_id = Column(Integer, ForeignKey('remision.id', ondelete='SET NULL'), nullable=True)
     
     paciente = relationship("Paciente")
     catalogo = relationship("NandaCatalogo")
     usuario = relationship("Usuario")
+    remision = relationship('Remision', foreign_keys=[remision_id])
 
 class NotaEnfermeria(Base):
     __tablename__ = "nota_enfermeria"
@@ -33,9 +35,11 @@ class NotaEnfermeria(Base):
     usuario_id = Column(Integer, ForeignKey("usuario.id", ondelete="CASCADE"), nullable=False)
     contenido = Column(Text, nullable=False)
     creado_en = Column(DateTime(timezone=True), server_default=func.now())
+    remision_id = Column(Integer, ForeignKey('remision.id', ondelete='SET NULL'), nullable=True)
     
     paciente = relationship("Paciente")
     usuario = relationship("Usuario")
+    remision = relationship('Remision', foreign_keys=[remision_id])
 
 class Favorito(Base):
     __tablename__ = "favorito"
