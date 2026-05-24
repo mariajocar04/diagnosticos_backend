@@ -16,9 +16,9 @@ def seed():
     db = SessionLocal()
     try:
         unidades = [
-            {'codigo': 'UCI-AD', 'nombre': 'UCI Adultos', 'tipo': 'UCI', 'descripcion': 'Unidad de cuidados intensivos para adultos'},
-            {'codigo': 'URG-AD', 'nombre': 'Urgencias Adultos', 'tipo': 'URGENCIAS', 'descripcion': 'Unidad de urgencias'},
-            {'codigo': 'PISO-3', 'nombre': 'Piso 3 Medicina', 'tipo': 'PISO', 'descripcion': 'Piso 3 - Medicina'},
+            {'codigo': 'UCI-AD', 'nombre': 'UCI Adultos', 'tipo': 'UCI', 'descripcion': 'Unidad de cuidados intensivos para adultos', 'capacidad': 10},
+            {'codigo': 'URG-AD', 'nombre': 'Urgencias Adultos', 'tipo': 'URGENCIAS', 'descripcion': 'Unidad de urgencias', 'capacidad': 15},
+            {'codigo': 'PISO-3', 'nombre': 'Piso 3 Medicina', 'tipo': 'PISO', 'descripcion': 'Piso 3 - Medicina', 'capacidad': 20},
         ]
         for u in unidades:
             exists = db.query(Unidad).filter(Unidad.codigo == u['codigo']).first()

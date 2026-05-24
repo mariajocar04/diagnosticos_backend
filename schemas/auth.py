@@ -51,3 +51,11 @@ class OTPVerify(BaseModel):
 class PasswordResetByOTP(BaseModel):
     reset_token: str
     new_password: str
+
+
+class UsuarioUpdate(BaseModel):
+    nombre_completo: Optional[str] = None
+    usuario: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+

@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas.auth import UsuarioCreate, UsuarioLogin, UsuarioResponse, OTPRequest, OTPVerify, PasswordResetByOTP
+from schemas.auth import UsuarioCreate, UsuarioLogin, UsuarioResponse, OTPRequest, OTPVerify, PasswordResetByOTP, UsuarioUpdate
 from controllers.auth_controller import AuthController
 from routes.deps import get_current_user
 from models.auth import Usuario
@@ -33,6 +33,13 @@ def logout(current_user: Usuario = Depends(get_current_user), db: Session = Depe
 def read_users_me(current_user: Usuario = Depends(get_current_user)):
     """Obtener el perfil del usuario autenticado"""
     return current_user
+
+
+@router.put("/me", response_model=UsuarioResponse)
+def update_user_me(data: UsuarioUpdate, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    """Actualizar datos del usuario autenticado"""
+    return AuthController.update_me(db, current_user, data)
+
 
 
 @router.post('/otp/request')

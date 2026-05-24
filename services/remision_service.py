@@ -64,18 +64,13 @@ class RemisionService:
 
     @staticmethod
     def cambiar_estado(db: Session, remision_id: int, nuevo_estado: str) -> Remision:
-        estados_permitidos = ['PENDIENTE', 'ACTIVA', 'EGRESADO', 'CANCELADO']
-        nuevo_estado_upper = nuevo_estado.upper()
-        if nuevo_estado_upper not in estados_permitidos:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Estado inválido. Debe ser uno de: {', '.join(estados_permitidos)}"
-            )
-
         rem = db.query(Remision).filter(Remision.id == remision_id).first()
         if not rem:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Remisión no encontrada')
-        rem.estado = nuevo_estado_upper
+        rem.estado = nuevo_estado
+        if nuevo_estado == 'ACTIVA':
+            from sqlalchemy import func
+            rem.fecha_ingreso = func.now()
         db.commit()
         db.refresh(rem)
         return rem

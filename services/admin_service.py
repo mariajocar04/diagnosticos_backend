@@ -43,7 +43,14 @@ class AdminService:
         unidades = db.query(Unidad).all()
         board = []
         for u in unidades:
-            remisiones = db.query(Remision).filter(Remision.unidad_id == u.id, Remision.estado == 'ACTIVA').all()
+            # Traer remisiones que estén en estado PENDIENTE o ACTIVA
+            remisiones = db.query(Remision).filter(
+                Remision.unidad_id == u.id, 
+                Remision.estado.in_(['PENDIENTE', 'ACTIVA'])
+            ).order_by(Remision.fecha_remision.desc()).all()
+            
+            # Calcular ocupación real (solo los pacientes con estado ACTIVA ocupan cama)
+            pacientes_activos = sum(1 for r in remisiones if r.estado == 'ACTIVA')
             
             # Formatear unidad y remisiones para coincidir con UnidadBoardColumn
             unidad_dict = {
@@ -55,7 +62,7 @@ class AdminService:
                 "id": u.id,
                 "creado_en": u.creado_en,
                 "actualizado_en": u.actualizado_en,
-                "pacientes_activos": len(remisiones)
+                "pacientes_activos": pacientes_activos
             }
             board.append({
                 "unidad": unidad_dict,

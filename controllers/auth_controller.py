@@ -2,7 +2,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from models.auth import Usuario, Rol, UsuarioRol
-from schemas.auth import UsuarioCreate, UsuarioLogin
+from schemas.auth import UsuarioCreate, UsuarioLogin, UsuarioUpdate
 from services.auth_service import AuthService
 
 class AuthController:
@@ -76,3 +76,48 @@ class AuthController:
                 detail="La sesión ya estaba cerrada o el token es inválido"
             )
         return {"mensaje": "Cierre de sesión exitoso"}
+
+    @staticmethod
+    def update_me(db: Session, current_user: Usuario, data: UsuarioUpdate):
+        if data.usuario is not None and data.usuario.strip() != "":
+            # Verificar si ya existe el nombre de usuario
+            existing = db.query(Usuario).filter(Usuario.usuario == data.usuario, Usuario.id != current_user.id).first()
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="El nombre de usuario ya está registrado"
+                )
+            current_user.usuario = data.usuario.strip()
+
+        if data.email is not None and data.email.strip() != "":
+            # Verificar si ya existe el email
+            existing = db.query(Usuario).filter(Usuario.email == data.email, Usuario.id != current_user.id).first()
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="El correo electrónico ya está registrado"
+                )
+            current_user.email = data.email.strip()
+
+        if data.nombre_completo is not None and data.nombre_completo.strip() != "":
+            current_user.nombre_completo = data.nombre_completo.strip()
+
+        if data.password is not None and data.password.strip() != "":
+            if len(data.password) < 6:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="La contraseña debe tener al menos 6 caracteres"
+                )
+            current_user.password_hash = AuthService.get_password_hash(data.password)
+
+        try:
+            db.commit()
+            db.refresh(current_user)
+            return current_user
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al actualizar perfil: {str(e)}"
+            )
+

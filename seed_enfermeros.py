@@ -28,6 +28,7 @@ def seed_enfermeros():
         {"codigo": "favorito:gestionar", "recurso": "favorito", "accion": "gestionar"},
         {"codigo": "busqueda:gestionar", "recurso": "busqueda", "accion": "gestionar"},
         {"codigo": "reporte:exportar_propio", "recurso": "reporte", "accion": "exportar_propio"},
+        {"codigo": "remision:gestionar", "recurso": "remision", "accion": "gestionar"},
     ]
 
     permisos_map = {}
